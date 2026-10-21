@@ -6,15 +6,22 @@ import '../theme/app_theme.dart';
 class ChatScreen extends StatefulWidget {
   final String chatId;
   final String chatName;
+  final _Message? _forwardDraft;
 
-  const ChatScreen({super.key, required this.chatId, required this.chatName});
+  const ChatScreen({super.key, required this.chatId, required this.chatName})
+    : _forwardDraft = null;
+
+  const ChatScreen._forward({
+    required this.chatId,
+    required this.chatName,
+    required _Message message,
+  }) : _forwardDraft = message;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  static const _attachmentBlue = Color(0xFF527DA3);
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<_Message> _messages = [];
@@ -22,6 +29,23 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _pickingFiles = false;
   bool _blocked = false;
   bool _showEmoji = false;
+  String? _replyPreview;
+  String? _forwardedFrom;
+  _Message? _pendingForward;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget._forwardDraft;
+    if (draft != null) {
+      _pendingForward = draft;
+      _forwardedFrom = draft.forwardedFrom;
+    }
+  }
+
+  String _preview(_Message message) => message.text.isNotEmpty
+      ? message.text
+      : message.files.map((file) => file.file.name).join(', ');
 
   @override
   void dispose() {
@@ -32,16 +56,40 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage() {
     final text = _messageController.text.trim();
-    if ((text.isEmpty && _pendingFiles.isEmpty) || _blocked || _pickingFiles) {
+    if ((text.isEmpty && _pendingFiles.isEmpty && _pendingForward == null) ||
+        _blocked ||
+        _pickingFiles) {
       return;
     }
     setState(() {
-      _messages.insert(
-        0,
-        _Message(text, DateTime.now(), files: List.of(_pendingFiles)),
-      );
+      final forward = _pendingForward;
+      if (forward != null) {
+        _messages.insert(
+          0,
+          _Message(
+            forward.text,
+            DateTime.now(),
+            files: List.of(forward.files),
+            forwardedFrom: forward.forwardedFrom,
+          ),
+        );
+      }
+      if (text.isNotEmpty || _pendingFiles.isNotEmpty) {
+        _messages.insert(
+          0,
+          _Message(
+            text,
+            DateTime.now(),
+            files: List.of(_pendingFiles),
+            replyPreview: _replyPreview,
+          ),
+        );
+      }
       _pendingFiles.clear();
       _messageController.clear();
+      _replyPreview = null;
+      _forwardedFrom = null;
+      _pendingForward = null;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _scrollController.hasClients) {
@@ -54,7 +102,112 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future<void> _pickFiles() async {
+  Future<void> _showAttachmentMenu(BuildContext context) async {
+    if (_pickingFiles || _blocked) return;
+    FocusScope.of(context).unfocus();
+    setState(() => _showEmoji = false);
+    final type = await showModalBottomSheet<FileType>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        final colors = Theme.of(sheetContext).colorScheme;
+        Widget option(String label, IconData icon, Color color, FileType type) {
+          return SizedBox(
+            width: 88,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton.filled(
+                  tooltip: label,
+                  style: IconButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Colors.white,
+                    fixedSize: const Size(64, 64),
+                    shape: const CircleBorder(),
+                  ),
+                  onPressed: () => Navigator.pop(sheetContext, type),
+                  icon: Icon(icon, size: 30),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Attach',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Choose what to share',
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 28),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 20,
+                  children: [
+                    option(
+                      'Photo',
+                      Icons.photo_library_outlined,
+                      const Color(0xFF9C6ADE),
+                      FileType.image,
+                    ),
+                    option(
+                      'Video',
+                      Icons.videocam_outlined,
+                      const Color(0xFFE66B7A),
+                      FileType.video,
+                    ),
+                    option(
+                      'File',
+                      Icons.insert_drive_file_outlined,
+                      const Color(0xFF00796B),
+                      FileType.any,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Selected files will appear above the message field.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colors.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted || type == null || _blocked) return;
+    await _pickFiles(type: type);
+  }
+
+  Future<void> _pickFiles({FileType type = FileType.any}) async {
     if (_pickingFiles || _blocked) return;
     FocusScope.of(context).unfocus();
     setState(() {
@@ -62,7 +215,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _showEmoji = false;
     });
     try {
-      final files = await FilePicker.pickFiles();
+      final files = await FilePicker.pickFiles(type: type);
       final attachments = <_Attachment>[];
       for (final file in files) {
         final size = file.lengthSync() ?? await file.length();
@@ -91,61 +244,103 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _showMessageActions(
     BuildContext context,
     _Message message,
+    Offset position,
   ) async {
-    final action = await showModalBottomSheet<String>(
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final localPosition = overlay.globalToLocal(position);
+    final colors = Theme.of(context).colorScheme;
+    final action = await showMenu<String>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (context) => SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(localPosition.dx, localPosition.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: colors.surfaceContainer,
+      clipBehavior: Clip.antiAlias,
+      constraints: const BoxConstraints(minWidth: 260, maxWidth: 320),
+      items: [
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              for (final emoji in ['👍', '❤️', '😂', '🔥', '🎉', '👎'])
+                TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.all(6),
+                    backgroundColor: message.reaction == emoji
+                        ? colors.primaryContainer
+                        : null,
+                    shape: const CircleBorder(),
+                  ),
+                  onPressed: () => Navigator.pop(context, emoji),
+                  child: Text(emoji, style: const TextStyle(fontSize: 26)),
+                ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        if (!_blocked && message.isOwn && message.forwardedFrom == null)
+          const PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
               children: [
-                const Text(
-                  'React to message',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  children: [
-                    for (final emoji in ['👍', '❤️', '😂', '🔥', '🎉', '👎'])
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          backgroundColor: message.reaction == emoji
-                              ? const Color(0xFFE0EDF7)
-                              : null,
-                        ),
-                        onPressed: () => Navigator.pop(context, emoji),
-                        child: Text(
-                          emoji,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                  ],
-                ),
-                ListTile(
-                  leading: const Icon(Icons.copy_outlined),
-                  title: Text(
-                    message.text.isEmpty ? 'Copy file names' : 'Copy message',
-                  ),
-                  onTap: () => Navigator.pop(context, 'copy'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: const Text(
-                    'Delete message',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () => Navigator.pop(context, 'delete'),
-                ),
+                Icon(Icons.edit_outlined, size: 21),
+                SizedBox(width: 12),
+                Text('Edit message'),
               ],
             ),
           ),
+        if (!_blocked)
+          const PopupMenuItem<String>(
+            value: 'reply',
+            child: Row(
+              children: [
+                Icon(Icons.reply_rounded, size: 21),
+                SizedBox(width: 12),
+                Text('Reply'),
+              ],
+            ),
+          ),
+        const PopupMenuItem<String>(
+          value: 'forward',
+          child: Row(
+            children: [
+              Icon(Icons.forward_rounded, size: 21),
+              SizedBox(width: 12),
+              Text('Forward'),
+            ],
+          ),
         ),
-      ),
+        PopupMenuItem<String>(
+          value: 'copy',
+          child: Row(
+            children: [
+              const Icon(Icons.copy_outlined, size: 21),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message.text.isEmpty ? 'Copy file names' : 'Copy message',
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, color: colors.error, size: 21),
+              const SizedBox(width: 12),
+              Text('Delete message', style: TextStyle(color: colors.error)),
+            ],
+          ),
+        ),
+      ],
     );
     if (!mounted || action == null || !_messages.contains(message)) return;
     if (action == 'copy') {
@@ -160,6 +355,14 @@ class _ChatScreenState extends State<ChatScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Copied'), duration: Duration(seconds: 1)),
       );
+    } else if (action == 'edit') {
+      if (!context.mounted) return;
+      await _editMessage(context, message);
+    } else if (action == 'reply') {
+      setState(() => _replyPreview = _preview(message));
+    } else if (action == 'forward') {
+      if (!context.mounted) return;
+      await _forwardMessage(context, message);
     } else if (action == 'delete') {
       setState(() => _messages.remove(message));
     } else {
@@ -167,16 +370,123 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _attachmentCard(_Attachment attachment) {
+  Future<void> _editMessage(BuildContext context, _Message message) async {
+    var draft = message.text;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, updateDialog) => AlertDialog(
+          title: const Text('Edit message'),
+          content: SizedBox(
+            width: 400,
+            child: TextFormField(
+              initialValue: message.text,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 6,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(hintText: 'Message'),
+              onChanged: (value) => updateDialog(() => draft = value),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: draft.trim().isEmpty && message.files.isEmpty
+                  ? null
+                  : () => Navigator.pop(dialogContext, draft.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted ||
+        result == null ||
+        result == message.text ||
+        !_messages.contains(message) ||
+        _blocked)
+      return;
+    setState(() {
+      message.text = result;
+      message.edited = true;
+    });
+  }
+
+  Future<void> _forwardMessage(BuildContext context, _Message message) async {
+    // Demo destinations mirror the local conversations on HomeScreen.
+    const chats = <String, String>{
+      'saved': 'Saved Messages',
+      'study': 'Study Group',
+      'anna': 'Anna',
+      'maksym': 'Maksym',
+      'flutter': 'Flutter Community',
+      'olena': 'Olena',
+      'project': 'Messenger Project',
+      'andrii': 'Andrii',
+    };
+    final target = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.7,
+          ),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Forward to…',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+              ),
+              for (final chat in chats.entries)
+                if (chat.key != widget.chatId)
+                  ListTile(
+                    leading: const Icon(Icons.chat_bubble_outline),
+                    title: Text(chat.value),
+                    onTap: () => Navigator.pop(sheetContext, chat.key),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || !context.mounted || target == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ChatScreen._forward(
+          chatId: target,
+          chatName: chats[target]!,
+          message: _Message(
+            message.text,
+            DateTime.now(),
+            files: List.of(message.files),
+            forwardedFrom: message.forwardedFrom ?? widget.chatName,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attachmentCard(BuildContext context, _Attachment attachment) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircleAvatar(
-            backgroundColor: _attachmentBlue,
-            foregroundColor: Colors.white,
-            child: Icon(Icons.insert_drive_file_outlined),
+          CircleAvatar(
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
+            child: const Icon(Icons.insert_drive_file_outlined),
           ),
           const SizedBox(width: 10),
           Flexible(
@@ -187,16 +497,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   attachment.file.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF17212B),
+                    color: colors.onSurface,
                   ),
                 ),
                 Text(
                   '${attachment.sizeLabel} · Local attachment',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF6A895C),
+                    color: colors.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -434,7 +744,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 child: DecoratedBox(
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF8EAA8C),
+                                    color: colors.secondaryContainer,
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   child: Padding(
@@ -449,8 +759,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                           )
                                           ? 'Today'
                                           : '${message.time.day}/${message.time.month}/${message.time.year}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: colors.onSecondaryContainer,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -459,87 +769,204 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                               ),
                             Align(
-                              alignment: Alignment.centerRight,
+                              alignment: message.isOwn
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
                               child: GestureDetector(
-                                onLongPress: () =>
-                                    _showMessageActions(context, message),
+                                onLongPressStart: (details) =>
+                                    _showMessageActions(
+                                      context,
+                                      message,
+                                      details.globalPosition,
+                                    ),
+                                onSecondaryTapUp: (details) =>
+                                    _showMessageActions(
+                                      context,
+                                      message,
+                                      details.globalPosition,
+                                    ),
                                 child: Container(
                                   constraints: BoxConstraints(
                                     maxWidth:
-                                        MediaQuery.sizeOf(context).width * 0.82,
+                                        (MediaQuery.sizeOf(context).width *
+                                                0.75)
+                                            .clamp(0.0, 480.0),
                                   ),
                                   margin: const EdgeInsets.symmetric(
-                                    vertical: 3,
+                                    vertical: 5,
                                   ),
-                                  padding: const EdgeInsets.fromLTRB(
-                                    12,
-                                    8,
-                                    10,
-                                    6,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFE3FFC7),
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                      bottomLeft: Radius.circular(16),
-                                      bottomRight: Radius.circular(4),
+                                  decoration: ShapeDecoration(
+                                    color: message.isOwn
+                                        ? Color.lerp(
+                                            colors.primaryContainer,
+                                            colors.surface,
+                                            0.2,
+                                          )
+                                        : colors.surfaceContainer,
+                                    shape: _MessageBubbleBorder(
+                                      isOwn: message.isOwn,
                                     ),
-                                    boxShadow: [
+                                    shadows: const [
                                       BoxShadow(
-                                        color: Color(0x10000000),
-                                        offset: Offset(0, 1),
-                                        blurRadius: 1,
+                                        color: Color(0x0A000000),
+                                        offset: Offset(0, 2),
+                                        blurRadius: 4,
                                       ),
                                     ],
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      for (final attachment in message.files)
-                                        _attachmentCard(attachment),
-                                      if (message.text.isNotEmpty)
-                                        Text(
-                                          message.text,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            color: Color(0xFF17212B),
-                                            height: 1.35,
-                                          ),
-                                        ),
-                                      const SizedBox(height: 3),
-                                      Text(
-                                        '${message.time.hour.toString().padLeft(2, '0')}:${message.time.minute.toString().padLeft(2, '0')} · local',
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF6A895C),
-                                        ),
-                                      ),
-                                      if (message.reaction != null)
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 6,
-                                          ),
-                                          child: ActionChip(
-                                            label: Text(
-                                              '${message.reaction} 1',
+                                  child: IntrinsicWidth(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        for (final attachment in message.files)
+                                          _attachmentCard(context, attachment),
+                                        if (message.forwardedFrom != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 6,
                                             ),
-                                            tooltip: 'Remove reaction',
-                                            backgroundColor: const Color(
-                                              0xFFD0E7BF,
-                                            ),
-                                            labelStyle: const TextStyle(
-                                              color: Color(0xFF17212B),
-                                            ),
-                                            side: BorderSide.none,
-                                            onPressed: () => _toggleReaction(
-                                              message,
-                                              message.reaction!,
+                                            child: Text(
+                                              'Forwarded from ${message.forwardedFrom}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colors.onSurfaceVariant,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
+                                        if (message.replyPreview != null)
+                                          Container(
+                                            width: double.infinity,
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: colors.primary.withValues(
+                                                alpha: 0.08,
+                                              ),
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(10),
+                                              ),
+                                              border: Border(
+                                                left: BorderSide(
+                                                  color:
+                                                      colors.onSurfaceVariant,
+                                                  width: 3,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Reply',
+                                                  style: TextStyle(
+                                                    color:
+                                                        colors.onSurfaceVariant,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  message.replyPreview!,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: colors.onSurface,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        if (message.text.isNotEmpty)
+                                          Text(
+                                            message.text,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: colors.onSurface,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                        const SizedBox(height: 6),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                '${message.edited ? 'edited · ' : ''}${message.time.hour.toString().padLeft(2, '0')}:${message.time.minute.toString().padLeft(2, '0')}',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: colors.onSurface
+                                                      .withValues(alpha: 0.75),
+                                                ),
+                                              ),
+                                              if (message.isOwn) ...[
+                                                const SizedBox(width: 4),
+                                                Tooltip(
+                                                  message: message.isRead
+                                                      ? 'Read'
+                                                      : 'Sent',
+                                                  child: Icon(
+                                                    message.isRead
+                                                        ? Icons.done_all_rounded
+                                                        : Icons.done_rounded,
+                                                    size: 16,
+                                                    color: message.isRead
+                                                        ? colors.primary
+                                                        : colors.onSurface
+                                                              .withValues(
+                                                                alpha: 0.65,
+                                                              ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
                                         ),
-                                    ],
+                                        if (message.reaction != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 6,
+                                            ),
+                                            child: ActionChip(
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 4,
+                                                  ),
+                                              shape: const StadiumBorder(),
+                                              label: Text(
+                                                '${message.reaction} 1',
+                                              ),
+                                              tooltip: 'Remove reaction',
+                                              backgroundColor: colors.primary
+                                                  .withValues(alpha: 0.08),
+                                              labelStyle: TextStyle(
+                                                color: colors.onSurface,
+                                              ),
+                                              side: BorderSide.none,
+                                              onPressed: () => _toggleReaction(
+                                                message,
+                                                message.reaction!,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -549,6 +976,81 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                     ),
             ),
+            if ((_replyPreview != null || _forwardedFrom != null) && !_blocked)
+              Container(
+                margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _replyPreview != null
+                          ? Icons.reply_rounded
+                          : Icons.forward_rounded,
+                      color: colors.primary,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.only(left: 10),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(color: colors.primary, width: 3),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _replyPreview != null
+                                  ? 'Ответ на сообщение'
+                                  : 'Forwarded from $_forwardedFrom',
+                              style: TextStyle(
+                                color: colors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _replyPreview ??
+                                  (_pendingForward == null
+                                      ? ''
+                                      : _preview(_pendingForward!)),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                fontSize: 14,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Cancel reply or forwarding',
+                      icon: const Icon(Icons.close, size: 20),
+                      color: colors.onSurfaceVariant,
+                      onPressed: () => setState(() {
+                        if (_replyPreview != null) {
+                          _replyPreview = null;
+                        } else {
+                          _forwardedFrom = null;
+                          _pendingForward = null;
+                        }
+                      }),
+                    ),
+                  ],
+                ),
+              ),
             if (_pendingFiles.isNotEmpty && !_blocked)
               Container(
                 width: double.infinity,
@@ -599,74 +1101,127 @@ class _ChatScreenState extends State<ChatScreen> {
               )
             else
               Container(
-                color: colors.surface,
-                padding: const EdgeInsets.fromLTRB(2, 4, 8, 4),
+                decoration: BoxDecoration(
+                  color: colors.surfaceContainer,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(20),
+                  ),
+                  border: Border(
+                    top: BorderSide(
+                      color: colors.outlineVariant.withValues(alpha: 0.5),
+                      width: 0.5,
+                    ),
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    IconButton(
-                      tooltip: _showEmoji ? 'Close emoji' : 'Emoji',
-                      icon: Icon(
-                        _showEmoji
-                            ? Icons.close
-                            : Icons.sentiment_satisfied_alt_outlined,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      onPressed: () {
-                        FocusScope.of(context).unfocus();
-                        setState(() => _showEmoji = !_showEmoji);
-                      },
-                    ),
                     Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        minLines: 1,
-                        maxLines: 5,
-                        textCapitalization: TextCapitalization.sentences,
-                        keyboardType: TextInputType.multiline,
-                        style: const TextStyle(fontSize: 16),
-                        decoration: const InputDecoration(
-                          hintText: 'Message',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        onTap: () {
-                          if (_showEmoji) setState(() => _showEmoji = false);
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Attach files',
-                      onPressed: _pickingFiles ? null : _pickFiles,
-                      icon: _pickingFiles
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Icon(
-                              Icons.attach_file,
-                              color: colors.onSurfaceVariant,
-                            ),
-                    ),
-                    ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: _messageController,
-                      builder: (_, value, _) => IconButton.filled(
-                        tooltip: 'Send message',
-                        style: IconButton.styleFrom(
-                          backgroundColor: colors.primary,
-                          foregroundColor: colors.onPrimary,
-                          disabledBackgroundColor: colors.onSurface.withValues(
-                            alpha: 0.12,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: colors.outlineVariant.withValues(alpha: 0.6),
                           ),
                         ),
-                        onPressed:
-                            _pickingFiles ||
-                                (value.text.trim().isEmpty &&
-                                    _pendingFiles.isEmpty)
-                            ? null
-                            : _sendMessage,
-                        icon: const Icon(Icons.send_rounded, size: 23),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                            vertical: 2,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              IconButton(
+                                tooltip: _showEmoji ? 'Close emoji' : 'Emoji',
+                                icon: Icon(
+                                  _showEmoji
+                                      ? Icons.close
+                                      : Icons.sentiment_satisfied_alt_outlined,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                                onPressed: () {
+                                  FocusScope.of(context).unfocus();
+                                  setState(() => _showEmoji = !_showEmoji);
+                                },
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  controller: _messageController,
+                                  minLines: 1,
+                                  maxLines: 5,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  keyboardType: TextInputType.multiline,
+                                  textAlignVertical: TextAlignVertical.center,
+                                  style: const TextStyle(fontSize: 16),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Message',
+                                    filled: false,
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    if (_showEmoji)
+                                      setState(() => _showEmoji = false);
+                                  },
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Attach files',
+                                onPressed: _pickingFiles
+                                    ? null
+                                    : () => _showAttachmentMenu(context),
+                                icon: _pickingFiles
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.attach_file,
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                              ),
+                              const SizedBox(width: 4),
+                              ValueListenableBuilder<TextEditingValue>(
+                                valueListenable: _messageController,
+                                builder: (_, value, _) => IconButton.filled(
+                                  tooltip: 'Send message',
+                                  style: IconButton.styleFrom(
+                                    minimumSize: const Size(48, 48),
+                                    shape: const CircleBorder(),
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: colors.onPrimary,
+                                    disabledBackgroundColor: colors.onSurface
+                                        .withValues(alpha: 0.12),
+                                    disabledForegroundColor: colors.onSurface
+                                        .withValues(alpha: 0.38),
+                                  ),
+                                  onPressed:
+                                      _pickingFiles ||
+                                          (value.text.trim().isEmpty &&
+                                              _pendingFiles.isEmpty &&
+                                              _pendingForward == null)
+                                      ? null
+                                      : _sendMessage,
+                                  icon: const Icon(
+                                    Icons.send_rounded,
+                                    size: 23,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -707,11 +1262,75 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
+/// Rounded bubble with a short, curved 10 px tail on the sender's side.
+class _MessageBubbleBorder extends ShapeBorder {
+  const _MessageBubbleBorder({required this.isOwn});
+
+  final bool isOwn;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
+
+  @override
+  ShapeBorder scale(double t) => this;
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final body = Path()
+      ..addRRect(
+        BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isOwn ? 18 : 1),
+          bottomRight: Radius.circular(isOwn ? 1 : 18),
+        ).toRRect(rect),
+      );
+    final edge = isOwn ? rect.right : rect.left;
+    final direction = isOwn ? 1.0 : -1.0;
+    final tail = Path()
+      ..moveTo(edge - direction * 6, rect.bottom - 14)
+      ..quadraticBezierTo(
+        edge,
+        rect.bottom - 2,
+        edge + direction * 10,
+        rect.bottom,
+      )
+      ..quadraticBezierTo(
+        edge,
+        rect.bottom + 2,
+        edge - direction * 8,
+        rect.bottom - 1,
+      )
+      ..close();
+    return Path.combine(PathOperation.union, body, tail);
+  }
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) =>
+      getOuterPath(rect, textDirection: textDirection);
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+}
+
 class _Message {
-  _Message(this.text, this.time, {this.files = const []});
-  final String text;
+  _Message(
+    this.text,
+    this.time, {
+    this.files = const [],
+    this.replyPreview,
+    this.forwardedFrom,
+    this.isOwn = true,
+    this.isRead = false,
+  });
+  String text;
+  bool edited = false;
+  final bool isOwn;
+  bool isRead;
   final DateTime time;
   final List<_Attachment> files;
+  final String? replyPreview;
+  final String? forwardedFrom;
   String? reaction;
 }
 

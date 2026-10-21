@@ -3,7 +3,6 @@ import '../theme/app_theme.dart';
 import 'chat_screen.dart';
 import 'settings_screen.dart';
 import 'contacts_screen.dart';
-import 'new_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,6 +101,81 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(context, MaterialPageRoute<void>(builder: (_) => screen));
   }
 
+  void _showCreatePanel(BuildContext context, {bool fromDrawer = false}) {
+    if (fromDrawer) Navigator.pop(context);
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) {
+        final colors = Theme.of(sheetContext).colorScheme;
+        Widget action(String title, String subtitle, IconData icon) {
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 4,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: colors.primaryContainer,
+              foregroundColor: colors.onPrimaryContainer,
+              child: Icon(icon),
+            ),
+            title: Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(subtitle),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Creation is not available yet.')),
+              );
+            },
+          );
+        }
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Create',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                ),
+                action(
+                  'New chat',
+                  'Start a conversation',
+                  Icons.chat_bubble_outline_rounded,
+                ),
+                action(
+                  'New group',
+                  'Bring people together',
+                  Icons.group_outlined,
+                ),
+                action(
+                  'New channel',
+                  'Share updates with subscribers',
+                  Icons.campaign_outlined,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final brightness = switch (AppTheme.mode) {
@@ -126,53 +200,74 @@ class _HomeScreenState extends State<HomeScreen> {
         )
         .toList();
     return Scaffold(
+      backgroundColor: colors.surface,
       appBar: AppBar(
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 8,
-        leading: _isSearching
-            ? IconButton(
-                tooltip: 'Back',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => setState(() {
-                  _isSearching = false;
-                  _searchController.clear();
-                }),
-              )
-            : null,
+        automaticallyImplyLeading: !_isSearching,
         title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                cursorColor: colors.onPrimary,
-                style: TextStyle(color: colors.onPrimary, fontSize: 19),
-                decoration: InputDecoration(
-                  hintText: 'Search chats',
-                  hintStyle: TextStyle(
-                    color: colors.onPrimary.withValues(alpha: 0.7),
+            ? SizedBox(
+                height: 42,
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  cursorColor: colors.onPrimary,
+                  textAlignVertical: TextAlignVertical.center,
+                  textInputAction: TextInputAction.search,
+                  style: TextStyle(color: colors.onPrimary, fontSize: 16),
+                  decoration: InputDecoration(
+                    hintText: 'Search chats',
+                    hintStyle: TextStyle(
+                      color: colors.onPrimary.withValues(alpha: 0.7),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 21,
+                      color: colors.onPrimary.withValues(alpha: 0.8),
+                    ),
+                    filled: true,
+                    fillColor: colors.onPrimary.withValues(alpha: 0.12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide(
+                        color: colors.onPrimary.withValues(alpha: 0.4),
+                      ),
+                    ),
                   ),
-                  filled: false,
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
+                  onChanged: (_) => setState(() {}),
                 ),
-                onChanged: (_) => setState(() {}),
               )
             : const Text(
-                'Telegram',
+                'Chats',
                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
               ),
         actions: [
           IconButton(
-            tooltip: _isSearching ? 'Clear search' : 'Search',
+            tooltip: _isSearching ? 'Close search' : 'Search',
             icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: () => setState(() {
-              if (_isSearching) {
-                _searchController.clear();
-              } else {
-                _isSearching = true;
-              }
-            }),
+            onPressed: () {
+              if (_isSearching) FocusScope.of(context).unfocus();
+              setState(() {
+                if (_isSearching) {
+                  _searchController.clear();
+                  _isSearching = false;
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
           ),
         ],
       ),
@@ -205,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: const Text('New Chat'),
-              onTap: () => _open(const NewChatScreen(), fromDrawer: true),
+              onTap: () => _showCreatePanel(context, fromDrawer: true),
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),
@@ -252,17 +347,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+                padding: const EdgeInsets.only(top: 8, bottom: 88),
                 itemCount: chats.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                separatorBuilder: (_, _) => Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  indent: 88,
+                  endIndent: 16,
+                  color: colors.outlineVariant.withValues(alpha: 0.5),
+                ),
                 itemBuilder: (context, index) => _tile(context, chats[index]),
               ),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'New message',
         shape: const CircleBorder(),
-        elevation: 3,
-        onPressed: () => _open(const NewChatScreen()),
+        backgroundColor: colors.primary,
+        foregroundColor: colors.onPrimary,
+        elevation: 2,
+        onPressed: () => _showCreatePanel(context),
         child: const Icon(Icons.edit, size: 25),
       ),
     );
@@ -272,21 +375,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final colors = Theme.of(context).colorScheme;
     final secondary = colors.onSurfaceVariant;
     return Material(
-      color: chat.pinned
-          ? colors.surfaceContainerHigh
-          : colors.surfaceContainerLow,
-      shape: StadiumBorder(
-        side: BorderSide(color: colors.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
+      color: colors.surface,
       child: InkWell(
         onTap: () => _open(ChatScreen(chatId: chat.id, chatName: chat.name)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
               CircleAvatar(
-                radius: 28,
+                radius: 26,
                 backgroundColor: chat.color,
                 foregroundColor: Colors.white,
                 child: chat.id == 'saved'
@@ -329,6 +426,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (chat.muted) ...[
                           const SizedBox(width: 5),
                           Icon(Icons.volume_off, size: 15, color: secondary),
+                        ],
+                        if (chat.pinned) ...[
+                          const SizedBox(width: 5),
+                          Icon(
+                            Icons.push_pin_rounded,
+                            size: 14,
+                            color: secondary,
+                          ),
                         ],
                       ],
                     ),
@@ -376,27 +481,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: chat.muted
-                            ? const Color(0xFFB6BEC5)
-                            : const Color(0xFF64A5D6),
+                            ? colors.surfaceContainerHighest
+                            : colors.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '${chat.unread}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: chat.muted
+                              ? colors.onSurfaceVariant
+                              : colors.onPrimary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     )
                   else
-                    SizedBox(
-                      height: 20,
-                      child: chat.pinned
-                          ? Icon(Icons.push_pin, size: 16, color: secondary)
-                          : null,
-                    ),
+                    const SizedBox(height: 20),
                 ],
               ),
             ],
