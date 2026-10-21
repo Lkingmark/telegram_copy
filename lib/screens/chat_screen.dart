@@ -539,7 +539,7 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               block ? 'Block' : 'Clear',
-              style: const TextStyle(color: Colors.red),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ],
@@ -646,12 +646,15 @@ class _ChatScreenState extends State<ChatScreen> {
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'clear',
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.delete_outline),
-                  title: Text('Clear history'),
+                  leading: Icon(Icons.delete_outline, color: colors.error),
+                  title: Text(
+                    'Clear history',
+                    style: TextStyle(color: colors.error),
+                  ),
                 ),
               ),
               if (!saved)
@@ -659,8 +662,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   value: 'block',
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(_blocked ? Icons.lock_open : Icons.block),
-                    title: Text(_blocked ? 'Unblock user' : 'Block user'),
+                    leading: Icon(
+                      _blocked ? Icons.lock_open : Icons.block,
+                      color: _blocked ? colors.primary : colors.error,
+                    ),
+                    title: Text(
+                      _blocked ? 'Unblock user' : 'Block user',
+                      style: TextStyle(
+                        color: _blocked ? colors.primary : colors.error,
+                      ),
+                    ),
                   ),
                 ),
             ],

@@ -155,9 +155,6 @@ class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
             capitalization: TextCapitalization.sentences,
             helperText: 'A few words about yourself',
           ),
-          const SizedBox(height: 8),
-          Divider(height: 24, thickness: 0.5, color: colors.outlineVariant),
-          _section('Contact details', colors),
           _field(
             colors,
             'Date of birth',
@@ -166,6 +163,9 @@ class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
             keyboardType: TextInputType.datetime,
             helperText: 'DD/MM/YYYY',
           ),
+          const SizedBox(height: 8),
+          Divider(height: 24, thickness: 0.5, color: colors.outlineVariant),
+          _section('Contact details', colors),
           _field(
             colors,
             'Phone number',
