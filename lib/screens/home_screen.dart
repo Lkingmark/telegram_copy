@@ -232,6 +232,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       size: 21,
                       color: colors.onPrimary.withValues(alpha: 0.8),
                     ),
+                    suffixIcon: IconButton(
+                      tooltip: 'Close search',
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: colors.onPrimary,
+                        size: 21,
+                      ),
+                      onPressed: () {
+                        FocusScope.of(context).unfocus();
+                        setState(() {
+                          _searchController.clear();
+                          _isSearching = false;
+                        });
+                      },
+                    ),
                     filled: true,
                     fillColor: colors.onPrimary.withValues(alpha: 0.12),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -258,21 +273,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w600),
               ),
         actions: [
-          IconButton(
-            tooltip: _isSearching ? 'Close search' : 'Search',
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: () {
-              if (_isSearching) FocusScope.of(context).unfocus();
-              setState(() {
-                if (_isSearching) {
-                  _searchController.clear();
-                  _isSearching = false;
-                } else {
-                  _isSearching = true;
-                }
-              });
-            },
-          ),
+          if (!_isSearching)
+            IconButton(
+              tooltip: 'Search',
+              icon: const Icon(Icons.search),
+              onPressed: () => setState(() => _isSearching = true),
+            ),
         ],
       ),
       drawer: Drawer(
