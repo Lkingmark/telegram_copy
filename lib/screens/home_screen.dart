@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import 'chat_screen.dart';
 import 'settings_screen.dart';
 import 'contacts_screen.dart';
@@ -12,7 +13,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const _blue = Color(0xFF527DA3);
   final _searchController = TextEditingController();
   bool _isSearching = false;
 
@@ -104,6 +104,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = switch (AppTheme.mode) {
+      ThemeMode.light => Brightness.light,
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
+    };
+    return Theme(
+      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+      child: Builder(builder: _buildHome),
+    );
+  }
+
+  Widget _buildHome(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final query = _searchController.text.trim().toLowerCase();
     final chats = _chats
         .where(
@@ -113,9 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
         )
         .toList();
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: _blue,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 8,
@@ -133,12 +144,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                cursorColor: Colors.white,
-                style: const TextStyle(color: Colors.white, fontSize: 19),
-                decoration: const InputDecoration(
+                cursorColor: colors.onPrimary,
+                style: TextStyle(color: colors.onPrimary, fontSize: 19),
+                decoration: InputDecoration(
                   hintText: 'Search chats',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(
+                    color: colors.onPrimary.withValues(alpha: 0.7),
+                  ),
+                  filled: false,
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
                 ),
                 onChanged: (_) => setState(() {}),
               )
@@ -161,20 +177,29 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: Drawer(
-        backgroundColor: Colors.white,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const UserAccountsDrawerHeader(
-              decoration: BoxDecoration(color: _blue),
+            UserAccountsDrawerHeader(
+              decoration: BoxDecoration(color: colors.primary),
               accountName: Text(
                 'My Name',
-                style: TextStyle(fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: colors.onPrimary,
+                ),
               ),
-              accountEmail: Text('+380 99 123 45 67'),
+              accountEmail: Text(
+                '+380 99 123 45 67',
+                style: TextStyle(color: colors.onPrimary),
+              ),
               currentAccountPicture: CircleAvatar(
-                backgroundColor: Color(0xFF86B6DB),
-                child: Icon(Icons.person, size: 40, color: Colors.white),
+                backgroundColor: colors.primaryContainer,
+                child: Icon(
+                  Icons.person,
+                  size: 40,
+                  color: colors.onPrimaryContainer,
+                ),
               ),
             ),
             ListTile(
@@ -206,15 +231,22 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         top: false,
         child: chats.isEmpty
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.search_off, size: 48, color: Color(0xFFA3ADB5)),
-                    SizedBox(height: 12),
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: colors.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       'No chats found',
-                      style: TextStyle(color: Color(0xFF707579), fontSize: 16),
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -222,19 +254,17 @@ class _HomeScreenState extends State<HomeScreen> {
             : ListView.separated(
                 padding: const EdgeInsets.only(bottom: 88),
                 itemCount: chats.length,
-                separatorBuilder: (_, _) => const Divider(
+                separatorBuilder: (_, _) => Divider(
                   height: 1,
                   thickness: 0.5,
                   indent: 88,
-                  color: Color(0xFFE8EBED),
+                  color: colors.outlineVariant,
                 ),
-                itemBuilder: (_, index) => _tile(chats[index]),
+                itemBuilder: (context, index) => _tile(context, chats[index]),
               ),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'New message',
-        backgroundColor: const Color(0xFF5B9BD5),
-        foregroundColor: Colors.white,
         shape: const CircleBorder(),
         elevation: 3,
         onPressed: () => _open(const NewChatScreen()),
@@ -243,10 +273,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _tile(_Chat chat) {
-    const secondary = Color(0xFF8A939B);
+  Widget _tile(BuildContext context, _Chat chat) {
+    final colors = Theme.of(context).colorScheme;
+    final secondary = colors.onSurfaceVariant;
     return Material(
-      color: chat.pinned ? const Color(0xFFF7F9FA) : Colors.white,
+      color: chat.pinned ? colors.surfaceContainerLow : colors.surface,
       child: InkWell(
         onTap: () => _open(ChatScreen(chatId: chat.id, chatName: chat.name)),
         child: Padding(
@@ -275,10 +306,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       children: [
                         if (chat.group) ...[
-                          const Icon(
+                          Icon(
                             Icons.group,
                             size: 17,
-                            color: Color(0xFF424A50),
+                            color: colors.onSurfaceVariant,
                           ),
                           const SizedBox(width: 4),
                         ],
@@ -287,20 +318,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             chat.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF17212B),
+                              color: colors.onSurface,
                             ),
                           ),
                         ),
                         if (chat.muted) ...[
                           const SizedBox(width: 5),
-                          const Icon(
-                            Icons.volume_off,
-                            size: 15,
-                            color: secondary,
-                          ),
+                          Icon(Icons.volume_off, size: 15, color: secondary),
                         ],
                       ],
                     ),
@@ -309,9 +336,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       chat.message,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        color: Color(0xFF707579),
+                        color: colors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -334,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                       Text(
                         chat.time,
-                        style: const TextStyle(fontSize: 12, color: secondary),
+                        style: TextStyle(fontSize: 12, color: secondary),
                       ),
                     ],
                   ),
@@ -366,11 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     SizedBox(
                       height: 20,
                       child: chat.pinned
-                          ? const Icon(
-                              Icons.push_pin,
-                              size: 16,
-                              color: secondary,
-                            )
+                          ? Icon(Icons.push_pin, size: 16, color: secondary)
                           : null,
                     ),
                 ],

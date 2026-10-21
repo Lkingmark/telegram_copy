@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
+import '../theme/app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -13,7 +14,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  static const _blue = Color(0xFF527DA3);
+  static const _attachmentBlue = Color(0xFF527DA3);
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<_Message> _messages = [];
@@ -87,7 +88,10 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => message.reaction = message.reaction == emoji ? null : emoji);
   }
 
-  Future<void> _showMessageActions(_Message message) async {
+  Future<void> _showMessageActions(
+    BuildContext context,
+    _Message message,
+  ) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -170,7 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const CircleAvatar(
-            backgroundColor: _blue,
+            backgroundColor: _attachmentBlue,
             foregroundColor: Colors.white,
             child: Icon(Icons.insert_drive_file_outlined),
           ),
@@ -203,7 +207,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _confirmAction({required bool block}) async {
+  Future<void> _confirmAction(
+    BuildContext context, {
+    required bool block,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -253,12 +260,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = switch (AppTheme.mode) {
+      ThemeMode.light => Brightness.light,
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
+    };
+    return Theme(
+      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+      child: Builder(builder: _buildChat),
+    );
+  }
+
+  Widget _buildChat(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final saved = widget.chatId == 'saved';
     final name = widget.chatName.trim();
     return Scaffold(
-      backgroundColor: const Color(0xFFDCE5D7),
       appBar: AppBar(
-        backgroundColor: _blue,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 0,
@@ -266,8 +284,8 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: const Color(0xFF85B4D7),
-              foregroundColor: Colors.white,
+              backgroundColor: colors.primaryContainer,
+              foregroundColor: colors.onPrimaryContainer,
               child: saved
                   ? const Icon(Icons.bookmark_border)
                   : Text(
@@ -294,7 +312,10 @@ class _ChatScreenState extends State<ChatScreen> {
                         : saved
                         ? 'Your personal space'
                         : 'Local chat · offline',
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colors.onPrimary.withValues(alpha: 0.7),
+                    ),
                   ),
                 ],
               ),
@@ -305,12 +326,12 @@ class _ChatScreenState extends State<ChatScreen> {
           PopupMenuButton<String>(
             tooltip: 'Chat options',
             onSelected: (value) {
-              if (value == 'clear') _confirmAction(block: false);
+              if (value == 'clear') _confirmAction(context, block: false);
               if (value == 'block') {
                 if (_blocked) {
                   setState(() => _blocked = false);
                 } else {
-                  _confirmAction(block: true);
+                  _confirmAction(context, block: true);
                 }
               }
             },
@@ -351,7 +372,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           vertical: 20,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.65),
+                          color: colors.surfaceContainerLow,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Column(
@@ -362,7 +383,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ? Icons.bookmark_border
                                   : Icons.waving_hand_outlined,
                               size: 40,
-                              color: _blue,
+                              color: colors.primary,
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -376,11 +397,11 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            const Text(
+                            Text(
                               'Messages are kept only while this screen is open.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFF667568),
+                                color: colors.onSurfaceVariant,
                                 height: 1.4,
                               ),
                             ),
@@ -440,7 +461,8 @@ class _ChatScreenState extends State<ChatScreen> {
                             Align(
                               alignment: Alignment.centerRight,
                               child: GestureDetector(
-                                onLongPress: () => _showMessageActions(message),
+                                onLongPress: () =>
+                                    _showMessageActions(context, message),
                                 child: Container(
                                   constraints: BoxConstraints(
                                     maxWidth:
@@ -507,6 +529,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                             backgroundColor: const Color(
                                               0xFFD0E7BF,
                                             ),
+                                            labelStyle: const TextStyle(
+                                              color: Color(0xFF17212B),
+                                            ),
                                             side: BorderSide.none,
                                             onPressed: () => _toggleReaction(
                                               message,
@@ -527,7 +552,7 @@ class _ChatScreenState extends State<ChatScreen> {
             if (_pendingFiles.isNotEmpty && !_blocked)
               Container(
                 width: double.infinity,
-                color: const Color(0xFFF2F5F7),
+                color: colors.surfaceContainerLow,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 6,
@@ -564,7 +589,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             if (_blocked)
               Container(
-                color: Colors.white,
+                color: colors.surface,
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 child: TextButton(
@@ -574,7 +599,7 @@ class _ChatScreenState extends State<ChatScreen> {
               )
             else
               Container(
-                color: Colors.white,
+                color: colors.surface,
                 padding: const EdgeInsets.fromLTRB(2, 4, 8, 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -585,7 +610,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         _showEmoji
                             ? Icons.close
                             : Icons.sentiment_satisfied_alt_outlined,
-                        color: const Color(0xFF8A939B),
+                        color: colors.onSurfaceVariant,
                       ),
                       onPressed: () {
                         FocusScope.of(context).unfocus();
@@ -619,9 +644,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.attach_file,
-                              color: Color(0xFF8A939B),
+                              color: colors.onSurfaceVariant,
                             ),
                     ),
                     ValueListenableBuilder<TextEditingValue>(
@@ -629,9 +654,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       builder: (_, value, _) => IconButton.filled(
                         tooltip: 'Send message',
                         style: IconButton.styleFrom(
-                          backgroundColor: _blue,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: const Color(0xFFE9EEF2),
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.onPrimary,
+                          disabledBackgroundColor: colors.onSurface.withValues(
+                            alpha: 0.12,
+                          ),
                         ),
                         onPressed:
                             _pickingFiles ||
@@ -648,7 +675,7 @@ class _ChatScreenState extends State<ChatScreen> {
             if (_showEmoji && !_blocked)
               Container(
                 width: double.infinity,
-                color: const Color(0xFFF2F5F7),
+                color: colors.surfaceContainerLow,
                 padding: const EdgeInsets.all(8),
                 child: Wrap(
                   alignment: WrapAlignment.center,

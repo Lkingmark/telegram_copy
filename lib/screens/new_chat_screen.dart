@@ -1,46 +1,75 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
-class NewChatScreen extends StatefulWidget{
+class NewChatScreen extends StatefulWidget {
   const NewChatScreen({super.key});
 
   @override
   State<StatefulWidget> createState() => _newChatScreen();
 }
-class _newChatScreen extends State<StatefulWidget>{
+
+class _newChatScreen extends State<StatefulWidget> {
   @override
   Widget build(BuildContext context) {
+    final brightness = switch (AppTheme.mode) {
+      ThemeMode.light => Brightness.light,
+      ThemeMode.dark => Brightness.dark,
+      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
+    };
+    return Theme(
+      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+      child: Builder(builder: _buildNewChat),
+    );
+  }
+
+  Widget _buildNewChat(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          appBar: AppBar(
-            backgroundColor: Colors.lightBlue,
-            title: Text("New chat"),
-          ),
-          body: TabBarView(
-            children: [
-              ListView(
-                children: [
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                      onPressed: (){},
-                      child: Text("Create new chat", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(title: const Text("New chat")),
+        body: TabBarView(
+          children: [
+            ListView(
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.surfaceContainerLow,
+                    foregroundColor: colors.primary,
                   ),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                      onPressed: (){},
-                      child: Text("Create new channel", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))
+                  onPressed: () {},
+                  child: const Text(
+                    "Create new chat",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                      onPressed: (){},
-                      child: Text("Create new group", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.surfaceContainerLow,
+                    foregroundColor: colors.primary,
                   ),
-                ],
-              ),
-            ],
-          ),
+                  onPressed: () {},
+                  child: const Text(
+                    "Create new channel",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.surfaceContainerLow,
+                    foregroundColor: colors.primary,
+                  ),
+                  onPressed: () {},
+                  child: const Text(
+                    "Create new group",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
+      ),
     );
   }
 }
