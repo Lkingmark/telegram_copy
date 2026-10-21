@@ -120,8 +120,12 @@ class _HomeScreenState extends State<HomeScreen> {
               vertical: 4,
             ),
             leading: CircleAvatar(
-              backgroundColor: colors.primaryContainer,
-              foregroundColor: colors.onPrimaryContainer,
+              backgroundColor: colors.brightness == Brightness.dark
+                  ? colors.primary.withValues(alpha: 0.12)
+                  : AppTheme.primaryColor.withValues(alpha: 0.1),
+              foregroundColor: colors.brightness == Brightness.dark
+                  ? colors.primary
+                  : AppTheme.primaryColor,
               child: Icon(icon),
             ),
             title: Text(
