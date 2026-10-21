@@ -252,14 +252,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               )
             : ListView.separated(
-                padding: const EdgeInsets.only(bottom: 88),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
                 itemCount: chats.length,
-                separatorBuilder: (_, _) => Divider(
-                  height: 1,
-                  thickness: 0.5,
-                  indent: 88,
-                  color: colors.outlineVariant,
-                ),
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, index) => _tile(context, chats[index]),
               ),
       ),
@@ -277,7 +272,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final colors = Theme.of(context).colorScheme;
     final secondary = colors.onSurfaceVariant;
     return Material(
-      color: chat.pinned ? colors.surfaceContainerLow : colors.surface,
+      color: chat.pinned
+          ? colors.surfaceContainerHigh
+          : colors.surfaceContainerLow,
+      shape: StadiumBorder(
+        side: BorderSide(color: colors.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => _open(ChatScreen(chatId: chat.id, chatName: chat.name)),
         child: Padding(
