@@ -206,8 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
         titleSpacing: 8,
@@ -306,11 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: colors.onPrimaryContainer,
                 ),
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined),
-              title: const Text('New Chat'),
-              onTap: () => _showCreatePanel(context, fromDrawer: true),
             ),
             ListTile(
               leading: const Icon(Icons.person_outline),

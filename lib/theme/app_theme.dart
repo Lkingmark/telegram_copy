@@ -9,8 +9,8 @@ import 'package:flutter/material.dart';
 ///
 /// Цвета, заданные непосредственно в экранах, имеют приоритет над темой.
 abstract final class AppTheme {
-  /// Material 3 Teal: остальные цвета генерируются из этого seed.
-  static const Color primaryColor = Color(0xFF00796B);
+  /// Material 3 Dark Blue: остальные цвета генерируются из этого seed.
+  static const Color primaryColor = Color(0xFF1565C0);
 
   /// system — тема устройства; light / dark — фиксированная тема.
   static const ThemeMode mode = ThemeMode.system;
