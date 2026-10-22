@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
@@ -10,6 +13,142 @@ class SettingsScreenAccount extends StatefulWidget {
 
 class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
   final _focusedFields = <String>{};
+  Uint8List? _avatarPhoto;
+  bool _changingPhoto = false;
+  bool _photoMenuOpen = false;
+
+  Future<void> _changePhoto() async {
+    if (_changingPhoto || _photoMenuOpen) return;
+    FocusScope.of(context).unfocus();
+    _photoMenuOpen = true;
+
+    try {
+      final choosePhoto = await showModalBottomSheet<bool>(
+        context: context,
+        showDragHandle: true,
+        useSafeArea: true,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        builder: (sheetContext) {
+          final colors = AppTheme.colorsOf(sheetContext);
+          return SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Change profile photo',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    leading: const CircleAvatar(
+                      backgroundColor: AppTheme.photoAttachment,
+                      foregroundColor: AppTheme.attachmentForeground,
+                      child: Icon(Icons.photo_library_outlined),
+                    ),
+                    title: const Text('Photo'),
+                    subtitle: Text(
+                      'Choose a profile photo',
+                      style: TextStyle(color: colors.secondaryText),
+                    ),
+                    onTap: () => Navigator.pop(sheetContext, true),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      if (!mounted || choosePhoto != true) return;
+
+      setState(() => _changingPhoto = true);
+      final photo = await FilePicker.pickFile(type: FileType.image);
+      if (!mounted || photo == null) return;
+      final bytes = await photo.readAsBytes();
+      if (!mounted) return;
+
+      // Check that the file can be displayed before replacing the current photo.
+      final image = await decodeImageFromList(bytes);
+      image.dispose();
+      if (!mounted) return;
+      setState(() => _avatarPhoto = bytes);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open photo. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      _photoMenuOpen = false;
+      if (mounted) setState(() => _changingPhoto = false);
+    }
+  }
+
+  Widget _avatar(ColorScheme colors) => Center(
+    child: SizedBox(
+      width: 96,
+      height: 96,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: CircleAvatar(
+                radius: 40,
+                backgroundColor: colors.primaryContainer,
+                foregroundImage: _avatarPhoto == null
+                    ? null
+                    : MemoryImage(_avatarPhoto!),
+                child: _avatarPhoto == null
+                    ? Icon(
+                        Icons.person_outline_rounded,
+                        size: 44,
+                        color: colors.onPrimaryContainer,
+                      )
+                    : null,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: IconButton.filled(
+              tooltip: 'Change profile photo',
+              style: IconButton.styleFrom(
+                backgroundColor: colors.primary,
+                foregroundColor: colors.onPrimary,
+                disabledBackgroundColor: colors.primary,
+                disabledForegroundColor: colors.onPrimary,
+                minimumSize: const Size(40, 40),
+                shape: CircleBorder(
+                  side: BorderSide(color: colors.surface, width: 3),
+                ),
+              ),
+              onPressed: _changingPhoto ? null : _changePhoto,
+              icon: _changingPhoto
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colors.onPrimary,
+                      ),
+                    )
+                  : const Icon(Icons.camera_alt_outlined, size: 20),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _section(String title, ColorScheme colors) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
@@ -82,15 +221,7 @@ class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: colors.primaryContainer,
-            child: Icon(
-              Icons.person_outline_rounded,
-              size: 44,
-              color: colors.onPrimaryContainer,
-            ),
-          ),
+          _avatar(colors),
           const SizedBox(height: 12),
           Text(
             'Your profile',
