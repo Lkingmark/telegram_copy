@@ -22,7 +22,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        final colors = Theme.of(context).colorScheme;
+        final colors = AppTheme.colorsOf(context);
         return AlertDialog(
           title: const Text("Вийти з групи?"),
           content: const Text("Ви більше не зможете читати нові повідомлення!"),
@@ -79,19 +79,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildGroupDetails),
-    );
-  }
-
-  Widget _buildGroupDetails(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -103,9 +91,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                   style: TextStyle(color: colors.onPrimary, fontSize: 22),
                   decoration: InputDecoration(
                     hintText: "Пошук",
-                    hintStyle: TextStyle(
-                      color: colors.onPrimary.withValues(alpha: 0.7),
-                    ),
+                    hintStyle: TextStyle(color: colors.onPrimaryMuted),
                     filled: false,
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -195,20 +181,20 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                     //     children: [
                     //       const CircleAvatar(
                     //         radius: 50,
-                    //         backgroundColor: Colors.red,
-                    //         child: Text("Test", style: TextStyle(color: Colors.white, fontSize: 30)),
+                    //         backgroundColor: colors.error,
+                    //         child: Text("Test", style: TextStyle(color: colors.onError, fontSize: 30)),
                     //       ),
                     //       Positioned(
                     //         right: 0,
                     //         bottom: 5,
                     //         child: Badge(
-                    //           backgroundColor: Colors.green,
+                    //           backgroundColor: colors.tertiary,
                     //           smallSize: 20,
                     //           child: Container(
                     //             decoration: BoxDecoration(
                     //               shape: BoxShape.circle,
-                    //               color: Colors.white,
-                    //               border: Border.all(color: Colors.white, width: 2),
+                    //               color: colors.onTertiary,
+                    //               border: Border.all(color: colors.onTertiary, width: 2),
                     //             ),
                     //           ),
                     //         ),

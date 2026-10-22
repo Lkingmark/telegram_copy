@@ -27,19 +27,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildContacts),
-    );
-  }
-
-  Widget _buildContacts(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final query = _searchController.text.trim().toLowerCase();
     final contacts = _contacts
         .where(
@@ -65,12 +53,10 @@ class _ContactsScreenState extends State<ContactsScreen> {
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     hintText: 'Search contacts',
-                    hintStyle: TextStyle(
-                      color: colors.onPrimary.withValues(alpha: 0.7),
-                    ),
+                    hintStyle: TextStyle(color: colors.onPrimaryMuted),
                     prefixIcon: Icon(
                       Icons.search_rounded,
-                      color: colors.onPrimary.withValues(alpha: 0.8),
+                      color: colors.onPrimarySubtle,
                       size: 21,
                     ),
                     suffixIcon: IconButton(
@@ -89,7 +75,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       },
                     ),
                     filled: true,
-                    fillColor: colors.onPrimary.withValues(alpha: 0.12),
+                    fillColor: colors.searchFill,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -101,9 +87,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(
-                        color: colors.onPrimary.withValues(alpha: 0.4),
-                      ),
+                      borderSide: BorderSide(color: colors.searchOutline),
                     ),
                   ),
                 ),
@@ -136,7 +120,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                       thickness: 0.5,
                       indent: 84,
                       endIndent: 16,
-                      color: colors.outlineVariant.withValues(alpha: 0.5),
+                      color: colors.subtleDivider,
                     ),
                     itemBuilder: (context, index) {
                       final contact = contacts[index];
@@ -163,9 +147,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
                           contact.phone,
                           style: TextStyle(
                             fontSize: 12,
-                            color: colors.onSurfaceVariant.withValues(
-                              alpha: 0.8,
-                            ),
+                            color: colors.secondaryText,
                           ),
                         ),
                         trailing: IconButton(
@@ -203,12 +185,12 @@ class _ContactsScreenState extends State<ContactsScreen> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+      backgroundColor: AppTheme.colorsOf(context).surfaceContainer,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        final colors = Theme.of(sheetContext).colorScheme;
+        final colors = AppTheme.colorsOf(sheetContext);
         return SafeArea(
           top: false,
           child: Padding(
@@ -277,7 +259,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        final colors = Theme.of(context).colorScheme;
+        final colors = AppTheme.colorsOf(context);
         return AlertDialog(
           title: const Text("Are you sure?"),
           content: const Text("You will block this user"),

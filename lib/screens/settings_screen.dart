@@ -6,19 +6,6 @@ import 'settings_screen_notifications.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildSettings),
-    );
-  }
-
   Widget _sectionTitle(String title, ColorScheme colors) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
@@ -39,7 +26,7 @@ class SettingsScreen extends StatelessWidget {
       thickness: 0.5,
       indent: indent,
       endIndent: 20,
-      color: colors.outlineVariant.withValues(alpha: 0.5),
+      color: colors.subtleDivider,
     );
   }
 
@@ -64,7 +51,7 @@ class SettingsScreen extends StatelessWidget {
           subtitle,
           style: TextStyle(
             fontSize: 13,
-            color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+            color: colors.secondaryText,
             height: 1.4,
           ),
         ),
@@ -73,8 +60,9 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSettings(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(

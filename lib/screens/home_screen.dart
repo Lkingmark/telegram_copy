@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Your notes, links and favourite messages',
       '12:42',
       '★',
-      Color(0xFF5AA9E6),
+      AppTheme.avatarBlue,
       pinned: true,
       sent: true,
     ),
@@ -33,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Olena: See you at the next lecture!',
       '12:35',
       'SG',
-      Color(0xFF8B78C5),
+      AppTheme.avatarPurple,
       unread: 12,
       pinned: true,
       group: true,
@@ -44,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Are we meeting at 3?',
       '12:28',
       'A',
-      Color(0xFFDF9671),
+      AppTheme.avatarPeach,
       unread: 2,
     ),
     _Chat(
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Thanks! I’ll check it out',
       '11:54',
       'M',
-      Color(0xFF6DB6A1),
+      AppTheme.avatarMint,
       sent: true,
     ),
     _Chat(
@@ -62,19 +62,19 @@ class _HomeScreenState extends State<HomeScreen> {
       'New resources for your next project',
       '11:20',
       'FC',
-      Color(0xFF58A5C9),
+      AppTheme.avatarTeal,
       unread: 128,
       muted: true,
       group: true,
     ),
-    _Chat('olena', 'Olena', 'Photo', '10:46', 'O', Color(0xFFC580A5)),
+    _Chat('olena', 'Olena', 'Photo', '10:46', 'O', AppTheme.avatarPink),
     _Chat(
       'project',
       'Messenger Project',
       'You: Updated the home screen',
       'Yesterday',
       'MP',
-      Color(0xFF7A9AC9),
+      AppTheme.avatarSlate,
       muted: true,
       group: true,
       sent: true,
@@ -85,7 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Sounds good 👍',
       'Yesterday',
       'A',
-      Color(0xFFB69B65),
+      AppTheme.avatarGold,
       sent: true,
     ),
   ];
@@ -112,7 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (sheetContext) {
-        final colors = Theme.of(sheetContext).colorScheme;
+        final colors = AppTheme.colorsOf(sheetContext);
         Widget action(String title, String subtitle, IconData icon) {
           return ListTile(
             contentPadding: const EdgeInsets.symmetric(
@@ -120,12 +120,8 @@ class _HomeScreenState extends State<HomeScreen> {
               vertical: 4,
             ),
             leading: CircleAvatar(
-              backgroundColor: colors.brightness == Brightness.dark
-                  ? colors.primary.withValues(alpha: 0.12)
-                  : AppTheme.primaryColor.withValues(alpha: 0.1),
-              foregroundColor: colors.brightness == Brightness.dark
-                  ? colors.primary
-                  : AppTheme.primaryColor,
+              backgroundColor: colors.createActionBackground,
+              foregroundColor: colors.createActionForeground,
               child: Icon(icon),
             ),
             title: Text(
@@ -182,19 +178,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildHome),
-    );
-  }
-
-  Widget _buildHome(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final query = _searchController.text.trim().toLowerCase();
     final chats = _chats
         .where(
@@ -222,13 +206,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(color: colors.onPrimary, fontSize: 16),
                   decoration: InputDecoration(
                     hintText: 'Search chats',
-                    hintStyle: TextStyle(
-                      color: colors.onPrimary.withValues(alpha: 0.7),
-                    ),
+                    hintStyle: TextStyle(color: colors.onPrimaryMuted),
                     prefixIcon: Icon(
                       Icons.search_rounded,
                       size: 21,
-                      color: colors.onPrimary.withValues(alpha: 0.8),
+                      color: colors.onPrimarySubtle,
                     ),
                     suffixIcon: IconButton(
                       tooltip: 'Close search',
@@ -246,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                     filled: true,
-                    fillColor: colors.onPrimary.withValues(alpha: 0.12),
+                    fillColor: colors.searchFill,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
@@ -258,9 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide(
-                        color: colors.onPrimary.withValues(alpha: 0.4),
-                      ),
+                      borderSide: BorderSide(color: colors.searchOutline),
                     ),
                   ),
                   onChanged: (_) => setState(() {}),
@@ -357,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   thickness: 0.5,
                   indent: 88,
                   endIndent: 16,
-                  color: colors.outlineVariant.withValues(alpha: 0.5),
+                  color: colors.subtleDivider,
                 ),
                 itemBuilder: (context, index) => _tile(context, chats[index]),
               ),
@@ -375,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _tile(BuildContext context, _Chat chat) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final secondary = colors.onSurfaceVariant;
     return Material(
       color: colors.surface,
@@ -388,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
               CircleAvatar(
                 radius: 26,
                 backgroundColor: chat.color,
-                foregroundColor: Colors.white,
+                foregroundColor: AppTheme.avatarForeground,
                 child: chat.id == 'saved'
                     ? const Icon(Icons.bookmark_border, size: 30)
                     : Text(
@@ -464,7 +444,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         const Icon(
                           Icons.done_all,
                           size: 17,
-                          color: Color(0xFF6BA587),
+                          color: AppTheme.readReceipt,
                         ),
                         const SizedBox(width: 3),
                       ],

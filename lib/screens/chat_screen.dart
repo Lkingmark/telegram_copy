@@ -115,7 +115,7 @@ class _ChatScreenState extends State<ChatScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (sheetContext) {
-        final colors = Theme.of(sheetContext).colorScheme;
+        final colors = AppTheme.colorsOf(sheetContext);
         Widget option(String label, IconData icon, Color color, FileType type) {
           return SizedBox(
             width: 88,
@@ -126,7 +126,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   tooltip: label,
                   style: IconButton.styleFrom(
                     backgroundColor: color,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppTheme.attachmentForeground,
                     fixedSize: const Size(64, 64),
                     shape: const CircleBorder(),
                   ),
@@ -171,19 +171,19 @@ class _ChatScreenState extends State<ChatScreen> {
                     option(
                       'Photo',
                       Icons.photo_library_outlined,
-                      const Color(0xFF9C6ADE),
+                      AppTheme.photoAttachment,
                       FileType.image,
                     ),
                     option(
                       'Video',
                       Icons.videocam_outlined,
-                      const Color(0xFFE66B7A),
+                      AppTheme.videoAttachment,
                       FileType.video,
                     ),
                     option(
                       'File',
                       Icons.insert_drive_file_outlined,
-                      const Color(0xFF00796B),
+                      AppTheme.fileAttachment,
                       FileType.any,
                     ),
                   ],
@@ -249,7 +249,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final overlay =
         Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
     final localPosition = overlay.globalToLocal(position);
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final action = await showMenu<String>(
       context: context,
       position: RelativeRect.fromRect(
@@ -477,7 +477,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _attachmentCard(BuildContext context, _Attachment attachment) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -539,7 +539,7 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () => Navigator.pop(context, true),
             child: Text(
               block ? 'Block' : 'Clear',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: TextStyle(color: AppTheme.colorsOf(context).error),
             ),
           ),
         ],
@@ -570,19 +570,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildChat),
-    );
-  }
-
-  Widget _buildChat(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final saved = widget.chatId == 'saved';
     final name = widget.chatName.trim();
     return Scaffold(
@@ -624,7 +612,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         : 'Local chat · offline',
                     style: TextStyle(
                       fontSize: 12,
-                      color: colors.onPrimary.withValues(alpha: 0.7),
+                      color: colors.onPrimaryMuted,
                     ),
                   ),
                 ],
@@ -812,18 +800,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                   decoration: ShapeDecoration(
                                     color: message.isOwn
-                                        ? Color.lerp(
-                                            colors.primaryContainer,
-                                            colors.surface,
-                                            0.2,
-                                          )
+                                        ? colors.outgoingMessageBackground
                                         : colors.surfaceContainer,
                                     shape: _MessageBubbleBorder(
                                       isOwn: message.isOwn,
                                     ),
                                     shadows: const [
                                       BoxShadow(
-                                        color: Color(0x0A000000),
+                                        color: AppTheme.messageShadow,
                                         offset: Offset(0, 2),
                                         blurRadius: 4,
                                       ),
@@ -859,9 +843,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             ),
                                             padding: const EdgeInsets.all(8),
                                             decoration: BoxDecoration(
-                                              color: colors.primary.withValues(
-                                                alpha: 0.08,
-                                              ),
+                                              color: colors.replyBackground,
                                               borderRadius: BorderRadius.all(
                                                 Radius.circular(10),
                                               ),
@@ -920,8 +902,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 style: TextStyle(
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
-                                                  color: colors.onSurface
-                                                      .withValues(alpha: 0.75),
+                                                  color:
+                                                      colors.messageTimestamp,
                                                 ),
                                               ),
                                               if (message.isOwn) ...[
@@ -937,10 +919,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                     size: 16,
                                                     color: message.isRead
                                                         ? colors.primary
-                                                        : colors.onSurface
-                                                              .withValues(
-                                                                alpha: 0.65,
-                                                              ),
+                                                        : colors.sentReceipt,
                                                   ),
                                                 ),
                                               ],
@@ -964,8 +943,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 '${message.reaction} 1',
                                               ),
                                               tooltip: 'Remove reaction',
-                                              backgroundColor: colors.primary
-                                                  .withValues(alpha: 0.08),
+                                              backgroundColor:
+                                                  colors.reactionBackground,
                                               labelStyle: TextStyle(
                                                 color: colors.onSurface,
                                               ),
@@ -1118,10 +1097,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     top: Radius.circular(20),
                   ),
                   border: Border(
-                    top: BorderSide(
-                      color: colors.outlineVariant.withValues(alpha: 0.5),
-                      width: 0.5,
-                    ),
+                    top: BorderSide(color: colors.subtleDivider, width: 0.5),
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
@@ -1133,9 +1109,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         decoration: BoxDecoration(
                           color: colors.surface,
                           borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: colors.outlineVariant.withValues(alpha: 0.6),
-                          ),
+                          border: Border.all(color: colors.inputOutline),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -1210,12 +1184,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                   style: IconButton.styleFrom(
                                     minimumSize: const Size(48, 48),
                                     shape: const CircleBorder(),
-                                    backgroundColor: AppTheme.primaryColor,
+                                    backgroundColor:
+                                        colors.sendButtonBackground,
                                     foregroundColor: colors.onPrimary,
-                                    disabledBackgroundColor: colors.onSurface
-                                        .withValues(alpha: 0.12),
-                                    disabledForegroundColor: colors.onSurface
-                                        .withValues(alpha: 0.38),
+                                    disabledBackgroundColor:
+                                        colors.disabledBackground,
+                                    disabledForegroundColor:
+                                        colors.disabledForeground,
                                   ),
                                   onPressed:
                                       _pickingFiles ||

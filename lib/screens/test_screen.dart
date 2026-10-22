@@ -6,19 +6,7 @@ class TestScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildTest),
-    );
-  }
-
-  Widget _buildTest(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Test')),
       body: ListView(

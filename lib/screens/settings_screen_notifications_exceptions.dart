@@ -6,26 +6,14 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildExceptions),
-    );
-  }
-
-  Widget _buildExceptions(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final colors = AppTheme.colorsOf(context);
     final cardShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(32),
     );
     final cardDecoration = BoxDecoration(
       boxShadow: [
         BoxShadow(
-          color: colors.shadow.withValues(alpha: 0.08),
+          color: colors.cardShadow,
           blurRadius: 6,
           offset: const Offset(0, 2),
         ),
@@ -33,9 +21,7 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
       color: colors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(32),
     );
-    final subtitleStyle = TextStyle(
-      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
-    );
+    final subtitleStyle = TextStyle(color: colors.secondaryText);
     const tilePadding = EdgeInsets.symmetric(horizontal: 16, vertical: 4);
     return Scaffold(
       appBar: AppBar(title: const Text('Notification exceptions')),
@@ -45,7 +31,7 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
           Container(
             decoration: cardDecoration,
             child: Material(
-              color: Colors.transparent,
+              color: AppTheme.transparent,
               shape: cardShape,
               clipBehavior: Clip.antiAlias,
               child: ListTile(
@@ -70,7 +56,7 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
           Container(
             decoration: cardDecoration,
             child: Material(
-              color: Colors.transparent,
+              color: AppTheme.transparent,
               shape: cardShape,
               clipBehavior: Clip.antiAlias,
               child: ListTile(
@@ -95,7 +81,7 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
           Container(
             decoration: cardDecoration,
             child: Material(
-              color: Colors.transparent,
+              color: AppTheme.transparent,
               shape: cardShape,
               clipBehavior: Clip.antiAlias,
               child: ListTile(
@@ -120,7 +106,7 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
           Container(
             decoration: cardDecoration,
             child: Material(
-              color: Colors.transparent,
+              color: AppTheme.transparent,
               shape: cardShape,
               clipBehavior: Clip.antiAlias,
               child: ListTile(

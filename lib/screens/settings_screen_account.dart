@@ -11,19 +11,6 @@ class SettingsScreenAccount extends StatefulWidget {
 class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
   final _focusedFields = <String>{};
 
-  @override
-  Widget build(BuildContext context) {
-    final brightness = switch (AppTheme.mode) {
-      ThemeMode.light => Brightness.light,
-      ThemeMode.dark => Brightness.dark,
-      ThemeMode.system => MediaQuery.platformBrightnessOf(context),
-    };
-    return Theme(
-      data: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
-      child: Builder(builder: _buildAccount),
-    );
-  }
-
   Widget _section(String title, ColorScheme colors) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
     child: Text(
@@ -75,24 +62,20 @@ class _SettingsScreenAccountState extends State<SettingsScreenAccount> {
           prefixIcon: Icon(icon, color: colors.onSurfaceVariant),
           helperText: helperText,
           helperMaxLines: 2,
-          helperStyle: TextStyle(
-            color: colors.onSurfaceVariant.withValues(alpha: 0.8),
-            fontSize: 12,
-          ),
+          helperStyle: TextStyle(color: colors.secondaryText, fontSize: 12),
           fillColor: colors.surfaceContainerLow,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(
-              color: colors.outlineVariant.withValues(alpha: 0.6),
-            ),
+            borderSide: BorderSide(color: colors.inputOutline),
           ),
         ),
       ),
     ),
   );
 
-  Widget _buildAccount(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppTheme.colorsOf(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Account')),
       body: ListView(

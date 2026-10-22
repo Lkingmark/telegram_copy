@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:telegram_frontend/screens/chat_screen.dart';
+import 'package:telegram_frontend/theme/app_theme.dart';
 
 class _Picker extends FilePickerPlatform {
   List<PlatformFile> files = [];
@@ -49,8 +50,11 @@ void main() {
 
   Future<void> openChat(WidgetTester tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: ChatScreen(chatId: 'anna', chatName: 'Anna'),
+      MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: AppTheme.mode,
+        home: const ChatScreen(chatId: 'anna', chatName: 'Anna'),
       ),
     );
   }
