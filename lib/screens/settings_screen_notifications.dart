@@ -29,24 +29,35 @@ class _SettingsScreenNotificationsState
 
   Widget _buildNotifications(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(32),
+    );
+    final cardDecoration = BoxDecoration(
+      boxShadow: [
+        BoxShadow(
+          color: colors.shadow.withValues(alpha: 0.08),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+      color: colors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(32),
+    );
+    final subtitleStyle = TextStyle(
+      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+    );
+    const tilePadding = EdgeInsets.symmetric(horizontal: 16, vertical: 4);
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
       body: ListView(
+        padding: const EdgeInsets.all(12),
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
+            decoration: cardDecoration,
             child: ListTile(
+              contentPadding: tilePadding,
+              horizontalTitleGap: 16,
+              subtitleTextStyle: subtitleStyle,
               leading: CircleAvatar(
                 backgroundColor: colors.primaryContainer,
                 child: Icon(
@@ -55,65 +66,41 @@ class _SettingsScreenNotificationsState
                 ),
               ),
               title: const Text('Notifications'),
-              subtitle: const Text('Show or hide notifications'),
+              subtitle: Text(
+                _notificationsEnabled
+                    ? 'Notifications turned on'
+                    : 'Notifications turned off',
+              ),
               trailing: Switch(
                 value: _notificationsEnabled,
                 onChanged: (value) {
                   setState(() {
                     _notificationsEnabled = value;
                   });
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadiusGeometry.only(
-                          topLeft: Radius.circular(40),
-                          topRight: Radius.circular(40),
-                        ),
-                      ),
-                      backgroundColor: colors.inverseSurface,
-                      content: Center(
-                        child: Text(
-                          _notificationsEnabled
-                              ? "Notifications turned on"
-                              : "Notifications turned off",
-                          style: TextStyle(color: colors.onInverseSurface),
-                        ),
-                      ),
-                    ),
-                  );
                 },
               ),
             ),
           ),
+          const SizedBox(height: 12),
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.surfaceContainerLow,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const SettingsScreenNotificationsExceptions(),
-                  ),
-                );
-              },
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              shape: cardShape,
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
+                contentPadding: tilePadding,
+                horizontalTitleGap: 16,
+                subtitleTextStyle: subtitleStyle,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const SettingsScreenNotificationsExceptions(),
+                    ),
+                  );
+                },
                 leading: CircleAvatar(
                   backgroundColor: colors.primaryContainer,
                   child: Icon(
@@ -124,6 +111,10 @@ class _SettingsScreenNotificationsState
                 ),
                 title: const Text('Notification exceptions'),
                 subtitle: const Text('Manage exceptions'),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             ),
           ),

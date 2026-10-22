@@ -19,30 +19,40 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
 
   Widget _buildExceptions(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final cardShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(32),
+    );
+    final cardDecoration = BoxDecoration(
+      boxShadow: [
+        BoxShadow(
+          color: colors.shadow.withValues(alpha: 0.08),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+      color: colors.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(32),
+    );
+    final subtitleStyle = TextStyle(
+      color: colors.onSurfaceVariant.withValues(alpha: 0.8),
+    );
+    const tilePadding = EdgeInsets.symmetric(horizontal: 16, vertical: 4);
     return Scaffold(
       appBar: AppBar(title: const Text('Notification exceptions')),
       body: ListView(
+        padding: const EdgeInsets.all(12),
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.surfaceContainerLow,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {},
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              shape: cardShape,
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
+                contentPadding: tilePadding,
+                horizontalTitleGap: 16,
+                subtitleTextStyle: subtitleStyle,
+                onTap: () {},
                 leading: CircleAvatar(
                   backgroundColor: colors.primaryContainer,
                   child: Icon(
@@ -56,26 +66,18 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.surfaceContainerLow,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {},
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              shape: cardShape,
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
+                contentPadding: tilePadding,
+                horizontalTitleGap: 16,
+                subtitleTextStyle: subtitleStyle,
+                onTap: () {},
                 leading: CircleAvatar(
                   backgroundColor: colors.primaryContainer,
                   child: Icon(
@@ -89,26 +91,18 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.surfaceContainerLow,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {},
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              shape: cardShape,
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
+                contentPadding: tilePadding,
+                horizontalTitleGap: 16,
+                subtitleTextStyle: subtitleStyle,
+                onTap: () {},
                 leading: CircleAvatar(
                   backgroundColor: colors.primaryContainer,
                   child: Icon(
@@ -122,26 +116,18 @@ class SettingsScreenNotificationsExceptions extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 12),
           Container(
-            margin: const EdgeInsets.only(top: 10, left: 10, right: 10),
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: colors.shadow.withValues(alpha: 0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-              color: colors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(50),
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.surfaceContainerLow,
-                padding: EdgeInsets.zero,
-              ),
-              onPressed: () {},
+            decoration: cardDecoration,
+            child: Material(
+              color: Colors.transparent,
+              shape: cardShape,
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
+                contentPadding: tilePadding,
+                horizontalTitleGap: 16,
+                subtitleTextStyle: subtitleStyle,
+                onTap: () {},
                 leading: CircleAvatar(
                   backgroundColor: colors.primaryContainer,
                   child: Icon(
